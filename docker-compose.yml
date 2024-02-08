@@ -1,0 +1,18 @@
+version: '3.7'
+services:
+    testdb:
+        image: 'kartoza/postgis:14-3.2'
+        container_name: test.db
+        ports:
+            - 5432:5432
+        environment:
+            - POSTGRES_USER=root
+            - POSTGRES_PASS=click123
+            - POSTGRES_DB=test
+        volumes:
+            - 'test_postgres_data:/var/lib/postgresql'
+
+
+volumes:
+    test_postgres_data:
+        external: true
