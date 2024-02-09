@@ -13,6 +13,7 @@ use App\Traits\BusinessException;
 use Hash;
 use Otp;
 use App\Jobs\JobOtp;
+use App\Jobs\JobSessionMail;
 
 
 
@@ -43,6 +44,17 @@ class AuthRepositoryImplement extends Eloquent implements AuthRepository
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
+        $data = [
+            'name' => $user->name,
+            'time' => date('Y-m-d H:i:s'),
+        ];
+
+        try {
+            dispatch(new JobSessionMail($request->email, $data));
+        } catch (\Throwable $th) {
+            throw $th;
+        }
+
         return self::buildResponse(
             Constants::HTTP_CODE_200,
             Constants::HTTP_MESSAGE_200,
@@ -70,6 +82,18 @@ class AuthRepositoryImplement extends Eloquent implements AuthRepository
         ]);
 
         $token = $user->createToken('auth_token')->plainTextToken;
+
+
+        $data = [
+            'name' => $request->name,
+            'time' => date('Y-m-d H:i:s'),
+        ];
+
+        try {
+            dispatch(new JobSessionMail($request->email, $data));
+        } catch (\Throwable $th) {
+            throw $th;
+        }
 
         return self::buildResponse(
             Constants::HTTP_CODE_200,
