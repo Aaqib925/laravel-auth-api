@@ -48,6 +48,7 @@ Route::prefix('v1')->group(function () {
         Route::prefix('profile')->group(function () {
             Route::get('/', [AuthController::class, 'profile']);
             Route::post('/change-password', [AuthController::class, 'changePassword']);
+            Route::post('/update', [AuthController::class, 'updateProfile']);
         });
 
         // Session management

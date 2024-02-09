@@ -31,6 +31,12 @@ class AuthController extends ApiController
         return $this->authRepository->login($request);
     }
 
+    public function updateProfile(Request $request)
+    {
+        return $this->authRepository->updateProfile($request);
+    }
+
+
     public function profile()
     {
         return $this->authRepository->profile();

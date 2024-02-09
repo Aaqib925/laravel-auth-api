@@ -34,6 +34,19 @@ class AuthRepositoryImplement extends Eloquent implements AuthRepository
         $this->model = $model;
     }
 
+    public function uploadProfileImage($request)
+    {
+        if ($request->hasFile('profile_image') && $request->file('profile_image')->isValid()) {
+            // Save the file in the public disk and generate a unique file name
+            $path = $request->file('profile_image')->store('profile_images', 'public');
+
+            // Return the path or a URL to access the file
+            return $path;
+        }
+
+        return null; // Return null or a default image path if no image is uploaded
+    }
+
     public function login($request)
     {
         if (!Auth::attempt($request->only('email', 'password'))) {
@@ -68,7 +81,8 @@ class AuthRepositoryImplement extends Eloquent implements AuthRepository
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8'
+            'password' => 'required|string|min:8',
+            'profile_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
 
         if ($validator->fails()) {
@@ -78,7 +92,8 @@ class AuthRepositoryImplement extends Eloquent implements AuthRepository
         $user = $this->model::create([
             'name' => $request->name,
             'email' => $request->email,
-            'password' => Hash::make($request->password)
+            'password' => Hash::make($request->password),
+            'profile_image' => $this->uploadProfileImage($request),
         ]);
 
         $token = $user->createToken('auth_token')->plainTextToken;
@@ -99,6 +114,33 @@ class AuthRepositoryImplement extends Eloquent implements AuthRepository
             Constants::HTTP_CODE_200,
             Constants::HTTP_MESSAGE_200,
             (['access_token' => $token, 'token_type' => 'Bearer']),
+            CommonUtil::generateUUID()
+        );
+    }
+
+    public function updateProfile($request)
+    {
+        $user = Auth::user();
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
+            'profile_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+        ]);
+
+        if ($request->hasFile('profile_image')) {
+            $path = $request->file('profile_image')->store('profile_images', 'public');
+            $user->profile_image = $path;
+        }
+
+        $user->name = $request->name;
+        $user->email = $request->email;
+        $user->save();
+
+        return self::buildResponse(
+            Constants::HTTP_CODE_200,
+            Constants::HTTP_MESSAGE_200,
+            (['user' => $user]),
             CommonUtil::generateUUID()
         );
     }
