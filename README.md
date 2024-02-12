@@ -18,10 +18,20 @@ change env to your settings
 
 php artisan migrate:fresh --seed
 
+Start the server
+```bash
 php artisan serve
+```
 
-*turn on job
+Turn on the queue
+```bash
 php artisan queue:listen 
+```
+
+Link the storage
+```bash
+php artisan storage:link
+```
 
 # Feature
 Auth system

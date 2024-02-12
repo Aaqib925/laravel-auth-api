@@ -50,7 +50,7 @@ class AuthRepositoryImplement extends Eloquent implements AuthRepository
     public function login($request)
     {
         if (!Auth::attempt($request->only('email', 'password'))) {
-            throw new BusinessException(401, 'Unauthorized!', Constants::HTTP_CODE_401);
+            throw new BusinessException(401, 'Invalid Credentials!', Constants::HTTP_CODE_401);
         }
 
         $user = $this->model::where('email', $request['email'])->firstOrFail();
@@ -103,12 +103,6 @@ class AuthRepositoryImplement extends Eloquent implements AuthRepository
             'name' => $request->name,
             'time' => date('Y-m-d H:i:s'),
         ];
-
-        try {
-            dispatch(new JobSessionMail($request->email, $data));
-        } catch (\Throwable $th) {
-            throw $th;
-        }
 
         return self::buildResponse(
             Constants::HTTP_CODE_200,
@@ -332,7 +326,20 @@ class AuthRepositoryImplement extends Eloquent implements AuthRepository
     public function listTokens()
     {
         $user = Auth::user();
-        return $user->tokens;
+        $currentTokenId = optional($user->currentAccessToken())->id; // Get the current token's ID
+
+        // First, filter out tokens with a null last_used_at value
+        $filteredTokens = $user->tokens->filter(function ($token) {
+            return !is_null($token->last_used_at);
+        });
+
+        // Then, map and add is_current_token, followed by sorting
+        $tokens = $filteredTokens->map(function ($token) use ($currentTokenId) {
+            $token->is_current_token = ($token->id === $currentTokenId);
+            return $token;
+        })->sortByDesc('is_current_token'); // Sort so the current token comes first, if applicable
+
+        return $tokens->values(); // Reset the keys to return a correctly ordered list
     }
 
     // Delete specific session
